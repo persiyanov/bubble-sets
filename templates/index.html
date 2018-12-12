@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%; margin: 0;">
+<head>
+  <style>
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+  </style>
+  <title>Bubblesets</title>
+  <meta charset="utf-8">
+  <script src={{ url_for('static', filename='bubblesets.js') }} charset="utf-8"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src={{ url_for('static', filename='snap.svg-min.js') }}></script>
+</head>
+<body onload="start()" style="width: 100vw; height: 90vh; margin: 0; padding: 0; text-align: center;">
+
+<h2>Persiyanov Bubblesets Visualization</h3>
+<p><b>Left click</b> - add rectangle from first set; <b>Right click</b> - add rectangle from second set.</p>
+<div id="svgcontainer"></div>
+
+<script>
+var svg = d3.select("#svgcontainer").append("svg")
+                                    .attr("id", "svgcanvas")
+                                    .style("width", "90vw")
+                                    .style("height", "80vh")
+                                    .style("margin", "0 auto");
+var snap = Snap(document.getElementById("svgcanvas"));
+svg.append("rect")
+   .attr("x", 0)
+   .attr("y", 0)
+   .attr("width", "100%")
+   .attr("height", "100%")
+   .style("stroke", "black")
+   .style("stroke-width", 1)
+   .style("fill", "none");
+
+function start() {
+  var bubbles = new BubbleSet();
+  var rectanglesA = [];
+  var rectanglesB = [];
+
+  var items = svg.append("g");
+  var pathA = svg.append("path")
+                 .attr("id", "pathA")
+                 .attr("opacity", 0.5)
+                 .attr("fill", "darkgreen")
+                 .attr("stroke", "black");
+  var snapPathA = snap.select("#pathA");
+  var pathB = svg.append("path")
+                 .attr("id", "pathB")
+                 .attr("opacity", 0.5)
+                 .attr("fill", "cornflowerblue")
+                 .attr("stroke", "black");
+  var snapPathB = snap.select("#pathB");
+
+
+  function update() {
+    updateOutline(rectanglesA, rectanglesB, pathA, snapPathA);
+    updateOutline(rectanglesB, rectanglesA, pathB, snapPathB);
+  }
+
+  function updateOutline(rectangles, otherRectangles, path, snapPath) {
+    var pad = 5;
+    var list = bubbles.createOutline(
+      BubbleSet.addPadding(rectangles, pad),
+      BubbleSet.addPadding(otherRectangles, pad),
+      null /* lines */
+    );
+    // rectangles need to have the form { x: 0, y: 0, width: 0, height: 0 }
+    // lines need to have the form { x1: 0, x2: 0, y1: 0, y2: 0 }
+    // lines can be null to infer lines between rectangles automatically
+    var outline = new PointPath(list).transform([
+      new ShapeSimplifier(0.0),
+      new BSplineShapeGenerator(),
+      new ShapeSimplifier(0.0),
+    ]);
+
+    // change path and animate it
+    snapPath.animate({d: outline}, 250, mina.linear);
+  }
+
+  function addRect(rectangles, color, cx, cy) {
+    var width = 40;
+    var height = 30;
+    var x = cx - width * 0.5;
+    var y = cy - height * 0.5;
+    var elem = items.append("rect")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("stroke", "black")
+                    .style("stroke-width", 1)
+                    .style("fill", color);
+    rectangles.push({
+      x: x,
+      y: y,
+      width: width,
+      height: height,
+      elem: elem,
+    });
+    update();
+  }
+
+
+  d3.select('svg').on('click', function() {
+    var e = d3.event;
+    addRect(rectanglesA, "seagreen", e.offsetX, e.offsetY);
+  });
+
+  d3.select('svg').on('contextmenu', function() {
+    var e = d3.event;
+    addRect(rectanglesB, "blue", e.offsetX, e.offsetY);
+    e.preventDefault();
+  })
+}
+</script>
+
+</body>
+</html>

@@ -15,7 +15,7 @@
 <body onload="start()" style="width: 100vw; height: 90vh; margin: 0; padding: 0; text-align: center;">
 
 <h2>Persiyanov Bubblesets Visualization</h3>
-<p><b>Left click</b> - add rectangle from first set; <b>Right click</b> - add rectangle from second set.</p>
+<p>Press numbers from <b>1</b> to <b>5</b> on your keyboard to place rectangle from corresponding set</p>
 <div id="svgcontainer"></div>
 
 <script>
@@ -25,6 +25,7 @@ var svg = d3.select("#svgcontainer").append("svg")
                                     .style("height", "80vh")
                                     .style("margin", "0 auto");
 var snap = Snap(document.getElementById("svgcanvas"));
+var svgRect = document.getElementById("svgcanvas").getBoundingClientRect();
 svg.append("rect")
    .attr("x", 0)
    .attr("y", 0)
@@ -35,28 +36,54 @@ svg.append("rect")
    .style("fill", "none");
 
 function start() {
+  // Track mouse movement to place rectangles when key is pressed
+  var mousePosition = {x:0, y:0};
+  document.addEventListener('mousemove', function(mouseMoveEvent){
+      mousePosition.x = mouseMoveEvent.pageX;
+      mousePosition.y = mouseMoveEvent.pageY;
+  }, false);
+
   var bubbles = new BubbleSet();
-  var rectanglesA = [];
-  var rectanglesB = [];
+
+  // Five sets' types are supported
+  var rectanglesSets = [[], [], [], [], []];
+
+  // Pair (rectangle color, isocontour color)
+  const colorPairs = [
+    ["seagreen", "darkgreen"],
+    ["blue", "cornflowerblue"],
+    ["red", "crimson"],
+    ["sandybrown", "rosybrown"],
+    ["purple", "darkorchid"]
+  ];
 
   var items = svg.append("g");
-  var pathA = svg.append("path")
-                 .attr("id", "pathA")
-                 .attr("opacity", 0.5)
-                 .attr("fill", "darkgreen")
-                 .attr("stroke", "black");
-  var snapPathA = snap.select("#pathA");
-  var pathB = svg.append("path")
-                 .attr("id", "pathB")
-                 .attr("opacity", 0.5)
-                 .attr("fill", "cornflowerblue")
-                 .attr("stroke", "black");
-  var snapPathB = snap.select("#pathB");
-
+  var d3Paths = [];
+  var snapPaths = [];
+  for (var i = 0; i < rectanglesSets.length; ++i) {
+    var pathId = "path" + i;
+    d3Paths.push(
+      svg.append("path")
+         .attr("id", pathId)
+         .attr("opacity", 0.5)
+         .attr("fill", colorPairs[i][1])
+         .attr("stroke", "black")
+    );
+    var snapPath = snap.select("#" + pathId);
+    snapPaths.push(snapPath);
+  }
 
   function update() {
-    updateOutline(rectanglesA, rectanglesB, pathA, snapPathA);
-    updateOutline(rectanglesB, rectanglesA, pathB, snapPathB);
+    for (var i = 0; i < colorPairs.length; ++i) {
+      var rectangles = rectanglesSets[i];
+      var otherRectangles = [];
+      for (var j = 0; j < colorPairs.length; ++j) {
+        if (j !== i) {
+          otherRectangles = otherRectangles.concat(rectanglesSets[j]);
+        }
+      }
+      updateOutline(rectangles, otherRectangles, d3Paths[i], snapPaths[i]);
+    }
   }
 
   function updateOutline(rectangles, otherRectangles, path, snapPath) {
@@ -102,17 +129,13 @@ function start() {
     update();
   }
 
-
-  d3.select('svg').on('click', function() {
-    var e = d3.event;
-    addRect(rectanglesA, "seagreen", e.offsetX, e.offsetY);
+  d3.select('body').on('keydown', function() {
+    const key = d3.event.key - '0';
+    if (key >= 1 && key <= 5 && mousePosition.x >= svgRect.left && mousePosition.x <= svgRect.right && mousePosition.y >= svgRect.top && mousePosition.y <= svgRect.bottom) {
+      addRect(rectanglesSets[key - 1], colorPairs[key - 1][0], mousePosition.x - svgRect.left, mousePosition.y - svgRect.top);
+    }
   });
 
-  d3.select('svg').on('contextmenu', function() {
-    var e = d3.event;
-    addRect(rectanglesB, "blue", e.offsetX, e.offsetY);
-    e.preventDefault();
-  })
 }
 </script>
 

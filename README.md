@@ -5,6 +5,11 @@ Inspired by https://github.com/JosuaKrause/bubblesets-js
 How to run:
 
 1. Clone repo
+2. Open `index.html` in your browser.
+
+**OR**
+
+1. Clone repo
 2. `cd bubble-sets`
 3. `python -m http.server`
 5. Visit http://localhost:5000

@@ -6,6 +6,5 @@ How to run:
 
 1. Clone repo
 2. `cd bubble-sets`
-3. `pip install flask`
-4. `flask run`
+3. `python -m http.server`
 5. Visit http://localhost:5000
